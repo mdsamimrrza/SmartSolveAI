@@ -1,6 +1,27 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform, StatusBar } from 'react-native';
 
+const styles = StyleSheet.create({
+  header: {
+    backgroundColor: '#141414',
+    height: 80,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) : 44,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 4,
+  }
+});
+
 export default function Header() {
   return (
     <View style={styles.header}>
@@ -9,35 +30,3 @@ export default function Header() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    backgroundColor: '#007AFF',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 44,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#fff',
-    opacity: 0.8,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-}); 

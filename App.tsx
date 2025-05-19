@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import {
+  SafeAreaView,
   StyleSheet,
   View,
   TextInput,
@@ -8,11 +9,9 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  StatusBar,
   ActivityIndicator,
+  StatusBar,
 } from 'react-native';
-import Header from './components/Header';
-import Footer from './components/Footer';
 import { getAIResponse } from './services/geminiService';
 
 type Message = {
@@ -22,186 +21,138 @@ type Message = {
 };
 
 export default function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
-
-  const scrollToBottom = () => {
-    if (flatListRef.current && messages.length > 0) {
-      flatListRef.current.scrollToEnd({ animated: true });
-    }
-  };
 
   const handleSend = async () => {
     if (!inputText.trim() || isLoading) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: inputText,
-      isUser: true,
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputText('');
+    // Add user message
+    setMessages(prev => [...prev, { id: Date.now().toString(), text: inputText, isUser: true }]);
     setIsLoading(true);
 
     try {
-      const aiResponse = await getAIResponse(inputText);
-      
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: aiResponse,
-        isUser: false,
-      };
-
-      setMessages(prev => [...prev, botMessage]);
+      // Get AI response
+      const response = await getAIResponse(inputText);
+      setMessages(prev => [...prev, { id: Date.now().toString(), text: response, isUser: false }]);
+      setInputText('');
     } catch (error) {
-      console.error('Error getting AI response:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: 'I apologize, but I encountered an error. Please try again.',
-        isUser: false,
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      console.error('Error:', error);
+      setMessages(prev => [...prev, { id: Date.now().toString(), text: 'Sorry, something went wrong.', isUser: false }]);
     } finally {
       setIsLoading(false);
+      // Scroll to bottom
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }
   };
 
-  const renderMessage = ({ item }: { item: Message }) => (
-    <View style={[
-      styles.messageContainer,
-      item.isUser ? styles.userMessage : styles.botMessage
-    ]}>
-      <Text style={[
-        styles.messageText,
-        item.isUser ? styles.userMessageText : styles.botMessageText
-      ]}>
-        {item.text}
-      </Text>
-    </View>
-  );
-
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#007AFF" />
-      <Header />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 25}
-      >
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#141414" />
+      <View style={styles.container}>
         <FlatList
           ref={flatListRef}
           data={messages}
-          renderItem={renderMessage}
-          keyExtractor={item => item.id}
-          style={styles.messageList}
-          contentContainerStyle={styles.messageListContent}
-          onContentSizeChange={scrollToBottom}
-          onLayout={scrollToBottom}
+          keyExtractor={(item) => item.id}
+          style={styles.content}
+          renderItem={({ item }) => (
+            <View style={[
+              styles.messageContainer,
+              item.isUser ? styles.userMessage : styles.botMessage,
+            ]}>
+              <Text style={styles.messageText}>{item.text}</Text>
+            </View>
+          )}
         />
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder="Type your message..."
-            placeholderTextColor="#666"
-            multiline
-            maxLength={1000}
-            returnKeyType="send"
-            onSubmitEditing={handleSend}
-            editable={!isLoading}
-          />
-          <TouchableOpacity 
-            style={[styles.sendButton, isLoading && styles.sendButtonDisabled]} 
-            onPress={handleSend}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.sendButtonText}>Send</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+      </View>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.inputWrapper}
+      >
+        <TextInput
+          style={styles.input}
+          value={inputText}
+          onChangeText={setInputText}
+          placeholder="Type a message..."
+          onSubmitEditing={handleSend}
+        />
+        <TouchableOpacity
+          style={styles.sendButton}
+          onPress={handleSend}
+        >
+          <Text style={styles.sendButtonText}>Send</Text>
+        </TouchableOpacity>
       </KeyboardAvoidingView>
-      <Footer />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#141414',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#141414',
   },
-  keyboardView: {
+  content: {
     flex: 1,
-  },
-  messageList: {
-    flex: 1,
-  },
-  messageListContent: {
-    padding: 16,
-    paddingBottom: 32,
+    backgroundColor: '#141414',
   },
   messageContainer: {
-    maxWidth: '80%',
-    marginVertical: 4,
+    marginBottom: 10,
     padding: 12,
-    borderRadius: 16,
+    borderRadius: 10,
+    maxWidth: '80%',
+    alignSelf: 'flex-start',
   },
   userMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#4a90e2',
   },
   botMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#2f2f2f',
   },
   messageText: {
+    color: '#fff',
     fontSize: 16,
   },
-  userMessageText: {
-    color: '#fff',
-  },
-  botMessageText: {
-    color: '#000',
-  },
-  inputContainer: {
+  inputWrapper: {
     flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
+    borderTopColor: '#333',
+    backgroundColor: '#141414',
   },
   input: {
     flex: 1,
-    marginRight: 12,
-    padding: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#222',
     borderRadius: 20,
+    padding: 12,
+    marginRight: 12,
+    color: '#fff',
     fontSize: 16,
-    color: '#000',
   },
   sendButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#4a90e2',
     borderRadius: 20,
-    paddingHorizontal: 20,
-    minWidth: 60,
-    height: 40,
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#007AFF80',
+    padding: 12,
+    alignItems: 'center',
   },
   sendButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
-}); 
+  footer: {
+    backgroundColor: '#141414',
+    padding: 16,
+  },
+});
